@@ -4,9 +4,9 @@ const userSlice = createSlice({
   name: "user",
   initialState: {
     userData: null,
-    // currentCity: null,
-    // currentState: null,
-    // currentAddress: null,
+    currentCity: null,
+    currentState: null,
+    currentAddress: null,
     // shopInMyCity: null,
     // itemsInMyCity: null,
     // cartItems: [],
@@ -19,15 +19,15 @@ const userSlice = createSlice({
     setUserData: (state, action) => {
       state.userData = action.payload;
     },
-    //     setCurrentCity: (state, action) => {
-    //       state.currentCity = action.payload;
-    //     },
-    //     setCurrentState: (state, action) => {
-    //       state.currentState = action.payload;
-    //     },
-    //     setCurrentAddress: (state, action) => {
-    //       state.currentAddress = action.payload;
-    //     },
+    setCurrentCity: (state, action) => {
+      state.currentCity = action.payload;
+    },
+    setCurrentState: (state, action) => {
+      state.currentState = action.payload;
+    },
+    setCurrentAddress: (state, action) => {
+      state.currentAddress = action.payload;
+    },
     //     setShopsInMyCity: (state, action) => {
     //       state.shopInMyCity = action.payload;
     //     },
@@ -112,9 +112,9 @@ const userSlice = createSlice({
 
 export const {
   setUserData,
-  //   setCurrentAddress,
-  //   setCurrentCity,
-  //   setCurrentState,
+  setCurrentAddress,
+  setCurrentCity,
+  setCurrentState,
   //   setShopsInMyCity,
   //   setItemsInMyCity,
   //   addToCart,

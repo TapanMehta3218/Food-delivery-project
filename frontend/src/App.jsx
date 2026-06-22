@@ -31,6 +31,10 @@ const App = () => {
         path="/"
         element={userData ? <Home /> : <Navigate to={"/signin"} />}
       />
+      <Route
+        path="/create-edit-shop"
+        element={userData ? <CreateEditShop /> : <Navigate to={"/signin"} />}
+      />
     </Routes>
   );
 };

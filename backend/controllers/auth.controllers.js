@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import User from "../models/user.model.js";
 import { sendOtpMail } from "../utils/mail.js";
 import genToken from "../utils/token.js";
+
 dotenv.config();
 
 export const signUp = async (req, res) => {
