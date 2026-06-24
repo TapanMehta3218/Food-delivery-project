@@ -44,8 +44,25 @@ export const getMyShop = async (req, res) => {
     if (!shop) {
       return null;
     }
-    await shop.populate("owner items");
+    await shop.populate({
+      path: "items",
+      options: { sort: { UpdatedAt: -1 } },
+    });
     res.status(200).json({ shop });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+export const getShopByCity = async (req, res) => {
+  try {
+    const { city } = req.params;
+    const shops = await Shop.find({
+      city: { $regex: new RegExp(`^${city}$`, "i") },
+    }).populate("items");
+    if (!shops) {
+      return res.status(404).json({ error: "No shops found in this city" });
+    }
+    res.status(200).json({ shops });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
