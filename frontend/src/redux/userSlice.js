@@ -11,8 +11,8 @@ const userSlice = createSlice({
     itemsInMyCity: null,
     cartItems: [],
 
-    // totalAmount: 0,
-    // myOrders: [],
+    totalAmount: 0,
+    myOrders: [],
     // searchItems: null,
     // socket: null,
   },
@@ -77,22 +77,22 @@ const userSlice = createSlice({
       );
     },
 
-    //     setMyOrders: (state, action) => {
-    //       state.myOrders = action.payload;
-    //     },
-    //     addMyOrder: (state, action) => {
-    //       state.myOrders = [action.payload, ...state.myOrders];
-    //     },
+    setMyOrders: (state, action) => {
+      state.myOrders = action.payload;
+    },
+    addMyOrder: (state, action) => {
+      state.myOrders = [action.payload, ...state.myOrders];
+    },
 
-    //     updateOrderStatus: (state, action) => {
-    //       const { orderId, shopId, status } = action.payload;
-    //       const order = state.myOrders.find((o) => o._id == orderId);
-    //       if (order) {
-    //         if (order.shopOrders && order.shopOrders.shop._id == shopId) {
-    //           order.shopOrders.status = status;
-    //         }
-    //       }
-    //     },
+    updateOrderStatus: (state, action) => {
+      const { orderId, shopId, status } = action.payload;
+      const order = state.myOrders.find((o) => o._id == orderId);
+      if (order) {
+        if (order.shopOrders && order.shopOrders.shop._id == shopId) {
+          order.shopOrders.status = status;
+        }
+      }
+    },
 
     //     updateRealtimeOrderStatus: (state, action) => {
     //       const { orderId, shopId, status } = action.payload;
@@ -121,11 +121,11 @@ export const {
   addToCart,
   updateQuantity,
   removeCartItem,
-  //   setMyOrders,
-  //   addMyOrder,
-  //   updateOrderStatus,
+  setMyOrders,
+  addMyOrder,
+  updateOrderStatus,
   //   setSearchItems,
-  //   setTotalAmount,
+  setTotalAmount,
   //   setSocket,
   //   updateRealtimeOrderStatus,
 } = userSlice.actions;
