@@ -13,8 +13,8 @@ const userSlice = createSlice({
 
     totalAmount: 0,
     myOrders: [],
-    // searchItems: null,
-    // socket: null,
+    searchItems: null,
+    socket: null,
   },
   reducers: {
     setUserData: (state, action) => {
@@ -35,9 +35,9 @@ const userSlice = createSlice({
     setItemsInMyCity: (state, action) => {
       state.itemsInMyCity = action.payload;
     },
-    //     setSocket: (state, action) => {
-    //       state.socket = action.payload;
-    //     },
+    setSocket: (state, action) => {
+      state.socket = action.payload;
+    },
     addToCart: (state, action) => {
       const cartItem = action.payload;
       const existingItem = state.cartItems.find((i) => i.id == cartItem.id);
@@ -94,20 +94,20 @@ const userSlice = createSlice({
       }
     },
 
-    //     updateRealtimeOrderStatus: (state, action) => {
-    //       const { orderId, shopId, status } = action.payload;
-    //       const order = state.myOrders.find((o) => o._id == orderId);
-    //       if (order) {
-    //         const shopOrder = order.shopOrders.find((so) => so.shop._id == shopId);
-    //         if (shopOrder) {
-    //           shopOrder.status = status;
-    //         }
-    //       }
-    //     },
+    updateRealtimeOrderStatus: (state, action) => {
+      const { orderId, shopId, status } = action.payload;
+      const order = state.myOrders.find((o) => o._id == orderId);
+      if (order) {
+        const shopOrder = order.shopOrders.find((so) => so.shop._id == shopId);
+        if (shopOrder) {
+          shopOrder.status = status;
+        }
+      }
+    },
 
-    //     setSearchItems: (state, action) => {
-    //       state.searchItems = action.payload;
-    //     },
+    setSearchItems: (state, action) => {
+      state.searchItems = action.payload;
+    },
   },
 });
 
@@ -124,9 +124,9 @@ export const {
   setMyOrders,
   addMyOrder,
   updateOrderStatus,
-  //   setSearchItems,
+  setSearchItems,
   setTotalAmount,
-  //   setSocket,
-  //   updateRealtimeOrderStatus,
+  setSocket,
+  updateRealtimeOrderStatus,
 } = userSlice.actions;
 export default userSlice.reducer;

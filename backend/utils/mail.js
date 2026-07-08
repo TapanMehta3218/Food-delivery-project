@@ -25,3 +25,21 @@ export const sendOtpMail = async (to, otp) => {
     throw new Error("Failed to send OTP email");
   }
 };
+
+export const sendDeliveryOtpMail = async (user, otp) => {
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL,
+      to: user.email,
+      subject: "Your Vingo Delivery OTP",
+      html: `<p>Dear ${user.fullName},</p>
+             <p>Your OTP for verifying your order delivery is: <b>${otp}</b></p>
+             <p>Please share this OTP with the delivery partner only when you receive your order.</p>
+             <p>This OTP is valid for 5 minutes.</p>`,
+    });
+    console.log("Delivery OTP email sent successfully");
+  } catch (error) {
+    console.error("Error sending delivery OTP email:", error);
+    throw new Error("Failed to send delivery OTP email");
+  }
+};

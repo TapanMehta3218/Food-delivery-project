@@ -2,6 +2,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import http from "http";
+import { Server } from "socket.io";
 import connectDB from "./config/db.js"; //Yaha jo file import kare usme end me .js lagana jaruri hai. Agar nahi lagayenge to error aayega ki module not found. Isliye hamesha .js lagana chahiye jab hum kisi file ko import karte hain.
 import authRouter from "./routes/auth.routes.js";
 import itemRouter from "./routes/item.routes.js"; // Import the itemRouter
@@ -10,6 +12,16 @@ import shopRouter from "./routes/shop.routes.js";
 import userRouter from "./routes/user.routes.js";
 dotenv.config();
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+app.set("io", io); // Set the io instance in the app locals for access in routes
 const port = process.env.PORT || 8000;
 app.use(express.json());
 app.use(cookieParser());
@@ -40,7 +52,7 @@ app.use((req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(port, () => {
+    server.listen(port, () => {
       console.log(`Server is running on port ${port}`);
     });
   } catch (error) {

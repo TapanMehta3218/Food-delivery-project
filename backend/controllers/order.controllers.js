@@ -1,6 +1,17 @@
-import DeliveryBoy from "../../frontend/src/components/DeliveryBoy.jsx";
+import dotenv from "dotenv";
+import RazorPay from "razorpay";
+import DeliveryAssignment from "../models/deliveryAssignment.model.js";
 import Order from "../models/order.model.js";
 import Shop from "../models/shop.model.js";
+import User from "../models/user.model.js";
+import { sendDeliveryOtpMail } from "../utils/mail.js";
+
+dotenv.config();
+let instance = new RazorPay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
 export const placeOrder = async (req, res) => {
   try {
     const { cartItems, paymentMethod, deliveryAddress, totalAmount } = req.body;
@@ -49,6 +60,29 @@ export const placeOrder = async (req, res) => {
         };
       }),
     );
+
+    if (paymentMethod == "online") {
+      const razorOrder = await instance.orders.create({
+        amount: Math.round(totalAmount * 100),
+        currency: "INR",
+        receipt: `receipt_${Date.now()}`,
+      });
+      const newOrder = await Order.create({
+        user: req.userId,
+        paymentMethod,
+        deliveryAddress,
+        totalAmount,
+        shopOrders,
+        razorpayOrderId: razorOrder.id,
+        payment: false,
+      });
+
+      return res.status(200).json({
+        razorOrder,
+        orderId: newOrder._id,
+      });
+    }
+
     const newOrder = await Order.create({
       user: req.userId,
       paymentMethod,
@@ -56,20 +90,86 @@ export const placeOrder = async (req, res) => {
       totalAmount,
       shopOrders,
     });
+
     await newOrder.populate(
       "shopOrders.shopOrderItems.item",
       "name image price",
     );
     await newOrder.populate("shopOrders.shop", "name");
-    return res
-      .status(201)
-      .json({ message: "order placed successfully", order: newOrder });
+    await newOrder.populate("shopOrders.owner", "name socketId");
+    await newOrder.populate("user", "name email mobile");
+
+    const io = req.app.get("io");
+
+    if (io) {
+      newOrder.shopOrders.forEach((shopOrder) => {
+        const ownerSocketId = shopOrder.owner.socketId;
+        if (ownerSocketId) {
+          io.to(ownerSocketId).emit("newOrder", {
+            _id: newOrder._id,
+            paymentMethod: newOrder.paymentMethod,
+            user: newOrder.user,
+            shopOrders: shopOrder,
+            createdAt: newOrder.createdAt,
+            deliveryAddress: newOrder.deliveryAddress,
+            payment: newOrder.payment,
+          });
+        }
+      });
+    }
+
+    return res.status(201).json(newOrder);
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "internal server error", error: error.message });
+    return res.status(500).json({ message: `place order error ${error}` });
   }
 };
+
+export const verifyPayment = async (req, res) => {
+  try {
+    const { razorpay_payment_id, orderId } = req.body;
+    const payment = await instance.payments.fetch(razorpay_payment_id);
+    if (!payment || payment.status != "captured") {
+      return res.status(400).json({ message: "payment not captured" });
+    }
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(400).json({ message: "order not found" });
+    }
+
+    order.payment = true;
+    order.razorpayPaymentId = razorpay_payment_id;
+    await order.save();
+
+    await order.populate("shopOrders.shopOrderItems.item", "name image price");
+    await order.populate("shopOrders.shop", "name");
+    await order.populate("shopOrders.owner", "name socketId");
+    await order.populate("user", "name email mobile");
+
+    const io = req.app.get("io");
+
+    if (io) {
+      order.shopOrders.forEach((shopOrder) => {
+        const ownerSocketId = shopOrder.owner.socketId;
+        if (ownerSocketId) {
+          io.to(ownerSocketId).emit("newOrder", {
+            _id: order._id,
+            paymentMethod: order.paymentMethod,
+            user: order.user,
+            shopOrders: shopOrder,
+            createdAt: order.createdAt,
+            deliveryAddress: order.deliveryAddress,
+            payment: order.payment,
+          });
+        }
+      });
+    }
+
+    return res.status(200).json(order);
+  } catch (error) {
+    return res.status(500).json({ message: `verify payment  error ${error}` });
+  }
+};
+
 export const getMyOrders = async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -105,35 +205,34 @@ export const getMyOrders = async (req, res) => {
     return res.status(500).json({ message: `get User order error ${error}` });
   }
 };
+
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId, shopId } = req.params;
     const { status } = req.body;
     const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-    const shopOrder = order.shopOrders.find(
-      (so) => so.shop.toString() === shopId,
-    );
+
+    const shopOrder = order.shopOrders.find((o) => o.shop == shopId);
     if (!shopOrder) {
-      return res.status(404).json({ message: "Shop order not found" });
+      return res.status(400).json({ message: "shop order not found" });
     }
     shopOrder.status = status;
-    if (status == "out of delivery" || !shopOrder.assignment) {
+    let deliveryBoysPayload = [];
+    if (status == "out of delivery" && !shopOrder.assignment) {
       const { longitude, latitude } = order.deliveryAddress;
-      const nearByDeliveryBoys = await user.find({
-        role: DeliveryBoy,
+      const nearByDeliveryBoys = await User.find({
+        role: "deliveryBoy",
         location: {
           $near: {
             $geometry: {
-              type: "point",
+              type: "Point",
               coordinates: [Number(longitude), Number(latitude)],
             },
             $maxDistance: 5000,
           },
         },
       });
+
       const nearByIds = nearByDeliveryBoys.map((b) => b._id);
       const busyIds = await DeliveryAssignment.find({
         assignedTo: { $in: nearByIds },
@@ -228,11 +327,10 @@ export const updateOrderStatus = async (req, res) => {
       assignment: updatedShopOrder?.assignment?._id,
     });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: `update order status error ${error}` });
+    return res.status(500).json({ message: `order status error ${error}` });
   }
 };
+
 export const getDeliveryBoyAssignment = async (req, res) => {
   try {
     const deliveryBoyId = req.userId;
@@ -272,7 +370,7 @@ export const acceptOrder = async (req, res) => {
       return res.status(400).json({ message: "assignment is expired" });
     }
 
-    export const alreadyAssigned = await DeliveryAssignment.findOne({
+    const alreadyAssigned = await DeliveryAssignment.findOne({
       assignedTo: req.userId,
       status: { $nin: ["brodcasted", "completed"] },
     });
@@ -304,6 +402,7 @@ export const acceptOrder = async (req, res) => {
     return res.status(500).json({ message: `accept order error ${error}` });
   }
 };
+
 export const getCurrentOrder = async (req, res) => {
   try {
     const assignment = await DeliveryAssignment.findOne({

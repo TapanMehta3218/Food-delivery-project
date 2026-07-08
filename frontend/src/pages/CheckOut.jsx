@@ -14,10 +14,12 @@ import { serverUrl } from "../App";
 import { setAddress, setLocation } from "../redux/mapSlice";
 import { addMyOrder } from "../redux/userSlice";
 function RecenterMap({ location }) {
-  if (location.lat && location.lon) {
-    const map = useMap();
-    map.setView([location.lat, location.lon], 16, { animate: true });
-  }
+  const map = useMap();
+  useEffect(() => {
+    if (location.lat && location.lon) {
+      map.setView([location.lat, location.lon], 16, { animate: true });
+    }
+  }, [location.lat, location.lon, map]);
   return null;
 }
 
