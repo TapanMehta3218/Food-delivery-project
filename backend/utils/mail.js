@@ -31,7 +31,7 @@ export const sendDeliveryOtpMail = async (user, otp) => {
     await transporter.sendMail({
       from: process.env.EMAIL,
       to: user.email,
-      subject: "Your Vingo Delivery OTP",
+      subject: "Your Swadify Delivery OTP",
       html: `<p>Dear ${user.fullName},</p>
              <p>Your OTP for verifying your order delivery is: <b>${otp}</b></p>
              <p>Please share this OTP with the delivery partner only when you receive your order.</p>

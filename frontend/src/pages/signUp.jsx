@@ -87,7 +87,7 @@ function SignUp() {
           className={`text-3xl font-bold mb-2 `}
           style={{ color: primaryColor }}
         >
-          Vingo
+          Swadify
         </h1>
         <p className="text-gray-600 mb-8">
           {" "}
